@@ -1,0 +1,144 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CEJUSC-DECS — Power BI Report</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#F5F7FA;color:#333;padding:20px}
+.header{background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center}
+.header h1{color:#0D3B1E;font-size:22px}
+.header .meta{color:#666;font-size:12px}
+.tabs{display:flex;gap:4px;margin-bottom:20px}
+.tab{background:#fff;border:none;padding:10px 20px;border-radius:8px 8px 0 0;cursor:pointer;font-weight:600;font-size:13px;color:#666;transition:.2s}
+.tab.active{background:#0D3B1E;color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center;transition:.2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.kpi .value{font-size:26px;font-weight:700;color:#0D3B1E;line-height:1.1}
+.kpi .label{font-size:11px;color:#666;margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+.kpi.green .value{color:#2E7D32}.kpi.red .value{color:#C62828}.kpi.orange .value{color:#EF6C00}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:16px;margin-bottom:16px}
+.card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card h3{color:#0D3B1E;font-size:14px;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #E8F5E9}
+.chart-wrap{position:relative;height:260px}.chart-wrap.tall{height:360px}
+.page{display:none}.page.active{display:block}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{background:#fff;border:2px solid #0D3B1E;color:#0D3B1E;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:.2s}
+.filter-btn:hover,.filter-btn.active{background:#0D3B1E;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#0D3B1E;color:#fff;padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+td{padding:8px 12px;border-bottom:1px solid #eee}
+tr:hover td{background:#E8F5E9}
+.status-acordo{background:#E8F5E9;color:#2E7D32;padding:2px 8px;border-radius:4px;font-weight:600;font-size:11px}
+.status-nao{background:#FFEBEE;color:#C62828;padding:2px 8px;border-radius:4px;font-weight:600;font-size:11px}
+.status-ausencia{background:#FFF3E0;color:#EF6C00;padding:2px 8px;border-radius:4px;font-weight:600;font-size:11px}
+@media(max-width:768px){.row{grid-template-columns:1fr}}
+</style></head><body>
+
+<div class="header">
+  <div><h1>🛡️ CEJUSC-DECS Dashboard</h1><p class="meta">TJDFT · Pauta 2º Grau</p></div>
+  <div style="text-align:right"><div style="font-size:10px;color:#999">Última atualização</div><div style="font-weight:600">10/07/2026 07:30</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('page1',this)">📊 Visão Geral</button>
+  <button class="tab" onclick="showTab('page2',this)">👤 Mediadores</button>
+  <button class="tab" onclick="showTab('page3',this)">📋 Processos</button>
+</div>
+
+<!-- PÁGINA 1 -->
+<div class="page active" id="page1">
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterMonth('all',this)">📅 Todos (43)</button>
+    <button class="filter-btn" onclick="filterMonth('may',this)">🌿 Maio (28)</button>
+    <button class="filter-btn" onclick="filterMonth('jun',this)">☀️ Junho (15)</button>
+  </div>
+
+  <div class="kpis" id="kpigrid">
+    <div class="kpi"><div class="value">43</div><div class="label">📋 Total Sessões</div></div>
+    <div class="kpi green"><div class="value">7,0%</div><div class="label">✅ Taxa de Acordo</div></div>
+    <div class="kpi"><div class="value">R$ 1.000</div><div class="label">💰 Valor Negociado</div></div>
+    <div class="kpi orange"><div class="value">12</div><div class="label">🚫 Ausências</div></div>
+    <div class="kpi red"><div class="value">16</div><div class="label">❌ Não Acordos</div></div>
+    <div class="kpi green"><div class="value">72%</div><div class="label">👥 Comparecimento</div></div>
+  </div>
+
+  <div class="row">
+    <div class="card"><h3>📊 Resultados por e-CEJUSC</h3><div class="chart-wrap"><canvas id="c1"></canvas></div></div>
+    <div class="card"><h3>🍩 Distribuição de Resultados</h3><div class="chart-wrap"><canvas id="c2"></canvas></div></div>
+  </div>
+
+  <div class="row">
+    <div class="card"><h3>📈 Taxa de Acordo ao Longo do Tempo</h3><div class="chart-wrap"><canvas id="c5"></canvas></div></div>
+    <div class="card"><h3>🏛️ Por Turma</h3><div class="chart-wrap"><canvas id="c4"></canvas></div></div>
+  </div>
+      <div class="card"><h3>Especializacao do Juizo de Origem</h3><div class="chart-container"><canvas id="c6"></canvas></div></div>
+      <div class="card"><h3>Circunscricao</h3><div class="chart-container"><canvas id="c7"></canvas></div></div>
+    </div>
+    <!-- PÁGINA 2 --><!-- PÁGINA 2 -->
+<div class="page" id="page2">
+  <div class="row">
+    <div class="card"><h3>👤 Top Mediadores por Sessões</h3><div class="chart-wrap tall"><canvas id="c3"></canvas></div></div>
+    <div class="card">
+      <h3>📊 Tabela de Mediadores</h3>
+      <table>
+        <tr><th>Mediador(a)</th><th>Sessões</th><th>Acordos</th><th>Taxa</th></tr>
+        <tr><td>EMANUEL</td><td>7</td><td>0</td><td>0%</td></tr>
+        <tr><td>SILVIA</td><td>7</td><td>0</td><td>0%</td></tr>
+        <tr><td>LARISSA</td><td>6</td><td>1</td><td style="color:#2E7D32;font-weight:700">16,7%</td></tr>
+        <tr><td>EMIDIO PRATA</td><td>5</td><td>0</td><td>0%</td></tr>
+        <tr><td>BRUNO</td><td>4</td><td>0</td><td>0%</td></tr>
+        <tr><td>ANA FÉLIX</td><td>3</td><td>1</td><td style="color:#2E7D32;font-weight:700">33,3%</td></tr>
+        <tr><td>DANIELA</td><td>3</td><td>1</td><td style="color:#2E7D32;font-weight:700">33,3%</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PÁGINA 3 -->
+<div class="page" id="page3">
+  <div class="card">
+    <h3>📋 Processos Recentes</h3>
+    <div style="overflow-x:auto">
+      <table>
+        <tr><th>DATA</th><th>PROCESSO</th><th>RESULTADO</th><th>MEDIADOR</th><th>TURMA</th><th>VALOR</th></tr>
+        <tr><td>11/05</td><td>0728245-37</td><td><span class="status-nao">NÃO ACORDO</span></td><td>ANA FÉLIX</td><td>5ª T Cível</td><td>—</td></tr>
+        <tr><td>12/05</td><td>0714602-83</td><td><span class="status-acordo">ACORDO</span></td><td>ANA FÉLIX</td><td>2ª T Cível</td><td>R$ 1.000</td></tr>
+        <tr><td>14/05</td><td>0700426-04</td><td><span class="status-acordo">ACORDO</span></td><td>LARISSA</td><td>1ª T Cível</td><td>R$ 188</td></tr>
+        <tr><td>19/05</td><td>0751747-36</td><td><span class="status-nao">NÃO ACORDO</span></td><td>SÍLVIA</td><td>2ª T Cível</td><td>R$ 308.600</td></tr>
+        <tr><td>19/05</td><td>0711613-64</td><td><span class="status-acordo">ACORDO</span></td><td>DANIELA</td><td>1ª T Cível</td><td>R$ 1.000</td></tr>
+        <tr><td>21/05</td><td>0703116-85</td><td><span class="status-ausencia">AUSÊNCIA</span></td><td>SÍLVIA</td><td>1ª T Cível</td><td>R$ 5.000</td></tr>
+        <tr><td>26/05</td><td>0027107-69</td><td><span class="status-ausencia">AUSÊNCIA</span></td><td>SILVIA</td><td>1ª T Cível</td><td>R$ 1.000</td></tr>
+        <tr><td>27/05</td><td>0072470-79</td><td><span class="status-ausencia">AUSÊNCIA</span></td><td>SILVIA</td><td>1ª T Cível</td><td>R$ 415</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');}
+function filterMonth(m,btn){
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  var d=m==='may'?{t:28,a:3,au:9,n:10,c:68}:m==='jun'?{t:15,a:0,au:3,n:6,c:80}:{t:43,a:3,au:12,n:16,c:72};
+  var vs=document.querySelectorAll('.kpi .value');if(vs.length>=6){vs[0].textContent=d.t;vs[1].textContent=(d.a/d.t*100).toFixed(1)+'%';vs[3].textContent=d.au;vs[4].textContent=d.n;vs[5].textContent=d.c+'%'}
+  if(m==='may'){c1.data.datasets[0].data=[2,2,3,3,1,1];c1.data.datasets[1].data=[2,1,2,1,1,1];c1.data.datasets[2].data=[1,1,0,0,1,0];c2.data.datasets[0].data=[10,9,3,2,1];c4.data.datasets[0].data=[5,3,2,1,1,0];c4.data.datasets[1].data=[4,3,1,0,0,1];c4.data.datasets[2].data=[2,0,0,0,0,0];c5.data.datasets[0].data=[10,0,10,0,33,0,0,0]}
+  else if(m==='jun'){c1.data.datasets[0].data=[1,1,1,1,1,1];c1.data.datasets[1].data=[1,1,1,0,1,0];c1.data.datasets[2].data=[0,0,0,0,0,0];c2.data.datasets[0].data=[6,3,0,2,1];c4.data.datasets[0].data=[2,2,1,0,0,0];c4.data.datasets[1].data=[2,2,0,1,0,0];c4.data.datasets[2].data=[0,0,0,0,0,0];c5.data.datasets[0].data=[0,0,0,0,0,0,0,0]}
+  else{c1.data.datasets[0].data=[3,3,4,4,2,2];c1.data.datasets[1].data=[3,2,3,1,2,1];c1.data.datasets[2].data=[1,1,0,0,1,0];c2.data.datasets[0].data=[16,12,3,4,2];c4.data.datasets[0].data=[7,5,3,1,1,0];c4.data.datasets[1].data=[6,5,1,0,1,1];c4.data.datasets[2].data=[2,0,0,0,0,0];c5.data.datasets[0].data=[0,25,10,0,33,0,0,0]}
+  c1.update();c2.update();c4.update();c5.update()}
+
+// Charts
+var c1=new Chart(document.getElementById('c1'),{type:'bar',data:{labels:['C1','C2','C3','C4','C5','C6'],datasets:[{label:'Não Acordo',data:[3,3,4,4,2,2],backgroundColor:'#C62828'},{label:'Ausência',data:[3,2,3,1,2,1],backgroundColor:'#EF6C00'},{label:'Acordo',data:[1,1,0,0,1,0],backgroundColor:'#2E7D32'},{label:'Suspensão',data:[0,0,1,2,1,0],backgroundColor:'#9E9E9E'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'Sessões'}}}}});
+
+var c2=new Chart(document.getElementById('c2'),{type:'doughnut',data:{labels:['Não Acordo','Ausência','Acordo','Suspensão','Cancelada'],datasets:[{data:[16,12,3,4,2],backgroundColor:['#C62828','#EF6C00','#2E7D32','#9E9E9E','#BDBDBD'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+
+var c3=new Chart(document.getElementById('c3'),{type:'bar',data:{labels:['EMANUEL','SILVIA','LARISSA','EMIDIO','BRUNO','ANA FÉLIX','DANIELA'],datasets:[{label:'Sessões',data:[7,7,6,5,4,3,3],backgroundColor:'#0D3B1E'},{label:'Acordos',data:[0,0,1,0,0,1,1],backgroundColor:'#2E7D32'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+
+var c4=new Chart(document.getElementById('c4'),{type:'bar',data:{labels:['1ª Turma','5ª Turma','3ª Turma','7ª Turma','8ª Turma','2ª Turma'],datasets:[{label:'Não Acordo',data:[7,5,3,1,1,0],backgroundColor:'#C62828'},{label:'Ausência',data:[6,5,1,0,1,1],backgroundColor:'#EF6C00'},{label:'Acordo',data:[2,0,0,0,0,0],backgroundColor:'#2E7D32'},{label:'Outros',data:[3,4,1,0,0,0],backgroundColor:'#9E9E9E'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true},y:{stacked:true}}}});
+
+var c5=new Chart(document.getElementById('c5'),{type:'line',data:{labels:['Sem 1','Sem 2','Sem 3','Sem 4','Sem 5','Sem 6','Sem 7','Sem 8'],datasets:[{label:'Taxa de Acordo',data:[0,25,10,0,33,0,0,0],borderColor:'#0D3B1E',backgroundColor:'#0D3B1E22',fill:true,tension:.4,borderWidth:2,pointRadius:4},{label:'Meta (30%)',data:[30,30,30,30,30,30,30,30],borderColor:'#EF6C00',borderDash:[5,5],borderWidth:1,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{min:0,max:50,ticks:{callback:function(v){return v+'%'}}}}}});
+
+new Chart(document.getElementById('c6'),{type:"bar",data:{labels:["Vara Civel","Fazenda Publica","Familia","Meio Ambiente","Outros"],datasets:[{data:[30,2,1,1,9],backgroundColor:["#0D3B1E","#2E7D32","#1565C0","#6A1B9A","#9E9E9E"]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{title:{display:true,text:"Sessoes"}}}}});
+new Chart(document.getElementById('c7'),{type:"bar",data:{labels:["Brasilia","Aguas Claras","Paranoa","Gama","Sobradinho","Outros"],datasets:[{data:[19,2,2,2,1,17],backgroundColor:["#0D3B1E","#2E7D32","#1565C0","#6A1B9A","#00838F","#9E9E9E"]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{title:{display:true,text:"Sessoes"}}}}});
+
+</script>
+</body></html>
